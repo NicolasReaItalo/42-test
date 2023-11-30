@@ -1,0 +1,44 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   _test_ft_putendl_fd.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: nrea <nrea@student.42.fr>                  +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/11/13 16:53:28 by nrea              #+#    #+#             */
+/*   Updated: 2023/11/17 16:01:15 by nrea             ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+
+#include "tests.h"
+# include <unistd.h>
+# include <fcntl.h>
+# include <stdlib.h>
+
+int	test_ft_putendl_fd(void)
+{
+	int	errors;
+	int fd;
+
+	errors = 0;
+
+// TEST 1
+	// printf("TEST 1 : testing output [ABCDEFGH] ont stdout\n ");
+	ft_putendl_fd("ABCDEFGH",1);
+	// printf("<--\n");
+// TEST 2
+	//printf("TEST 2 : testing output [ABCDEFGH] in a file\n ");
+	if ((fd = open("test_putendl_tmp.txt",O_WRONLY | O_CREAT )) != -1)
+	{
+		ft_putendl_fd("ABCDEFGH",fd);
+		close(fd);
+	}
+
+
+//printf("\n");
+//	    printf("ft_putendl_fd tested\n\n\n");
+//	ft_print_blue("______________________________________________________\n\n");
+	return (errors);
+
+}
