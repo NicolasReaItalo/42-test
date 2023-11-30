@@ -1,0 +1,3 @@
+copy the folder test next to your libft folder.
+in tests run ./run-test.sh with argument to run the batch you want.
+run ./run-tests without arguments to see the args.
