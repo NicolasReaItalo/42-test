@@ -1,0 +1,3 @@
+copy the test folder in your src folder.
+Uncomment the test you want to perform
+Run ./run-test.sh
