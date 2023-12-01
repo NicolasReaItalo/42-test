@@ -1,0 +1,6 @@
+Copy test in your source folders and run make or make bonus
+Mandatory
+./test_pgm + files/file_to_test or without args to test stdin
+
+Bonus
+./test_pgm
