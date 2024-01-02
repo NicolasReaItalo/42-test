@@ -1,0 +1,256 @@
+
+
+NOTES PIPEX
+
+
+
+
+
+
+
+l faut d'abord que tu comprennes ce qu'est un SIGPIPE.
+En clair, tu as la commande A qui va écrire dans un pipe, et la commande B qui va lire ce pipe en même temps. Pour certaines raisons, il est possible que la commande B se termine avant la A, et ferme son côté du pipe. Problème, la commande A était en train d'écrire dedans, et donc crash. C'est par example le cas avec /dev/stdin < cat | ls > /dev/stdout, où ls va se terminer avant le cat, qui est bloquant. Il y a aussi le cas où tu as une commande B qui n'existe pas, et va donc renvoyer une erreur bien plus rapidement que la commande A ne puisse s'executer. (modifié)
+
+2
+[17:31]
+Dans ces cas-ci, oui, il est normal de leak, et non, tu ne dois pas les gérer. Vérifie bien que ce sont des leaks liées aux commandes, et non à ton programme cela-dit.
+
+@apayen (Alexis)
+Dans ces cas-ci, oui, il est normal de leak, et non, tu ne dois pas les gérer. Vérifie bien que ce sont des leaks liées aux commandes, et non à ton programme cela-dit.
+./p
+
+
+
+
+
+
+
+
+
+Valgrind
+
+valgrind --log-file="filename et n hesite pas a
+aussi mettre --track-fds=yes --trace-children=yes pour le projet on sait jamais 🙂
+
+
+valgrind --log-file="filename"  --track-fds=yes --trace-children=yes
+
+
+
+https://stackoverflow.com/questions/63474134/how-to-free-memory-of-char-arrays-after-passing-them-to-exec-family-of-functi
+
+recuperer les arguments
+
+si - de 4 arguments
+	return
+
+parse arguments
+premier = infile
+deuxieme = cmd1
+....
+dernier outfile
+
+
+
+
+out_file  : O_CREATE | O_TRUNC | O_WRONLYp
+Verifier les permissions, si pas un repertoire, les liens symboliques...
+
+
+
+
+
+➜  pipex git:(master) ✗ ./pipex oo "/usr/bin/ls -l" "./test.sh" "/usr/bin/cat -n" test_outfile
+./test.sh: Permission denied
+
+➜  pipex git:(master) ✗ ./pipex oo "/usr/bin/ls -l" "./test.s" "/usr/bin/cat -n" test_outfile
+./test.s: No such file or directory
+
+
+
+/dev/stdin cat ls /dev/stdout, pour vérifier la connexion des pipes/waits qui doit faire un sigpipe.
+time in "sleep 5" "sleep 5" out, pour vérifier que tu lances les commandes "en même temps". (Le temps devrait être d'environ 5s, pas 10.)
+fichier in sans droit ou inexistant, et vérifier que la première commande n'est pas executé. (Idem pour out et la dernière commande)
+Commande sans droit ou inexistante en première et/ou deuxième.
+in /usr/bin/ls /usr/bin/cat out, pour vérifier la recherche absolue.
+cp /usr/bin/ls ./; mv ls lsa; in ./lsa cat out, pour vérifier la recherche relatif. (Tu peux aussi mettre le lsa dans un sous-dossier de ton pipex, et le lancer via dossier/lsa)
+Bien vérifier les leaks (y compris les fds) dans tous les cas au dessus, et en cas de fail d'execve. (modifié)
+[21:26]
+Je me rappelle pas d'autres cas précis. Si tu passe ceux-là, c'est que tu as déjà une bonne base, avec une connection de pipe sans problème et un parsing correct.
+[21:28]
+Ah, et si j'étais ton correcteur, je vérifierais aussi que tu ne fasse pas d'open sur un fichier après avoir utilisé un access dessus (comme écrit dans le man). (modifié)
+[21:29]
+Oh, et j'ai oublié les zombies. Mais si tu en as, tu as des problèmes avec les waits, donc ça se remarquera sur bien plus de tests. (modifié)
+
+2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+****************************
+
+Une erreur dans une des commandes ne va pas interrompre les autres.
+ex :
+< test_infile grepo a1 | wc -l > test_outfile
+==> wc s'execute qd meme avec et nvoie 0 car il n'a rien recu de stdin
+
+****************************
+➜  pipex git:(master) ✗ chmod 0 test_outfile
+➜  pipex git:(master) ✗ < test_infile grep a1 | wc -l > test_outfile
+zsh: permission denied: test_outfile
+
+*****************************
+➜  pipex git:(master) ✗ chmod 0 test_infile
+➜  pipex git:(master) ✗ < test_infile grep a1 | wc -l > test_outfile
+zsh: permission denied: test_infile
+
+
+****************************
+➜  pipex git:(master) ✗ < test_infile grep a1 | wc -l > test_fichier_inexistant
+Va creer le fichier test_fichier_inexistant
+
+
+
+****************************
+➜  pipex git:(master) ✗ < test_fichier_inexistant grep a1 | wc -l > test_outfile
+zsh: no such file or directory: test_fichier_inexistant
+➜  pipex git:(master) ✗
+
+****************************
+➜  pipex git:(master) ✗ mkdir test_dir
+➜  pipex git:(master) ✗ < test_infile grep a1 | wc -l > test_dir
+zsh: is a directory: test_dir
+
+
+Idee avec bonus
+
+Verification infile si existant et autorisation lecture
+Verification outfile si existant(sinon O_CREATE) et autorisation ecriture
+Prendre en compte le cas ou infile et outfile sont les meme !
+
+Quand erreur dans une commande
+(
+
+	ft_get_path : construit la commande complete a partir de la variable PATH
+
+	ft_getenv("PATH")
+
+	Message d'erreur sur STDERR
+	commande inexistante -> Affichage "zsh: command not found: heafrwqferwd"
+	mauvais arguments -> Message d'erreur de la commande
+
+On envoie 0 dans stdout et on continue la chaine de pipe
+)
+
+les erreurs peuvent se succeder : AFFICHAGE SUR STDERR
+head: invalid option -- 'p'
+Try 'head --help' for more information.
+zsh: command not found: wco
+
+
+
+< test_infile grep a1 | head -po 1 2>stderr |wco -l 2>stderr | cat -e > test_outfile
+
+cat stderr
+
+➜  pipex git:(master) ✗ cat stderr
+zsh: command not found: wco
+Try 'head --help' for more information.
+
+
+
+
+➜  pipex git:(master) ✗  ping -c 5 google.com | cat -jk
+cat: invalid option -- 'j'
+Try 'cat --help' for more information.
+➜  pipex git:(master) ✗  ping -c 5 google.com | cato -e
+zsh: command not found: cato
+➜  pipex git:(master) ✗
+
+
+
+
+
+
+
+
+
+
+https://www.baeldung.com/linux/piped-commands-order
+
+In this article, we discussed the concurrent execution and the execution order of processes in a pipeline.
+
+First, we learned about pipes. Despite some limitations, pipes are one of the most widely used IPC mechanisms. We discussed that processes in a pipeline run concurrently. We also saw that the operating system may not run the commands in their specified order in the pipeline. The order depends on the scheduling by the operating system.
+
+Then, we looked at two examples that showed the concurrent operation of piped processes and their execution order. We saw that the order may not always be the same in each execution.
+
+
+
+UN process parent qui va se charger de la derniere commande du pipe.
+
+pour chaque commande un fork depuis le main process
+un double tableau de pipe fd[nb_commande][2]
+
+
+
+
+
+SYNOPSIS
+#include <unistd.h>
+
+int execve(const char *pathname, char *const argv[],
+			char *const envp[]);
+
+DESCRIPTION
+execve() executes the program referred to by pathname.  This causes the program that is currently being run by the
+calling process to be replaced with a new program, with newly initialized stack, heap, and (initialized and unini‐
+tialized) data segments.
+
+pathname must be either a binary executable, or a script starting with a line of the form:
+
+	#!interpreter [optional-arg]
+
+For details of the latter case, see "Interpreter scripts" below.
+
+argv  is  an array of pointers to strings passed to the new program as its command-line arguments.  By convention,
+the first of these strings (i.e., argv[0]) should contain the filename associated with the  file  being  executed.
+The argv array must be terminated by a NULL pointer.  (Thus, in the new program, argv[argc] will be NULL.)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
