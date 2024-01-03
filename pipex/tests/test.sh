@@ -98,7 +98,7 @@ clean_output()
 	echo "" >$pipex_output
 	echo "" >$errors_bash
 	echo "" >$errors_pipex
-	echo "" > valgrind_output
+	echo "" > ../valgrind_output
 }
 
 summary()
@@ -147,7 +147,7 @@ TEST()
 		echo "Errors output:"
 	echo "${Cyan}######################################"
 	echo "${Red}"
-	echo "valgrind --log-file="valgrind_output"  --track-fds=yes --trace-children=yes $pipex_cmd" | $SHELL
+	echo "valgrind --log-file="../valgrind_output"  --track-fds=yes --trace-children=yes $pipex_cmd" | $SHELL
 	pipex_return_value=$?
 	echo ${Cyan}
 	echo "######################################"
@@ -211,7 +211,7 @@ fi
 #TEST 1
 test_description="Test simple qui ne doit pas retourner d'erreur\n"
 infile="input_ok"
-cmd1="ls "
+cmd1="ls -l"
 cmd2="cat -n"
 TEST
 
