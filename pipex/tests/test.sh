@@ -89,7 +89,7 @@ bash_return_value=""
 failed_test=0
 succes_test=0
 
-
+touch	in/input_interdit
 chmod -r in/input_interdit
 
 clean_output()
@@ -147,7 +147,7 @@ TEST()
 		echo "Errors output:"
 	echo "${Cyan}######################################"
 	echo "${Red}"
-	echo "valgrind --log-file="../valgrind_output"  --track-fds=yes --trace-children=yes $pipex_cmd" | $SHELL
+	echo "valgrind  --log-file="../valgrind_output" --trace-children=yes $pipex_cmd" | $SHELL
 	pipex_return_value=$?
 	echo ${Cyan}
 	echo "######################################"
